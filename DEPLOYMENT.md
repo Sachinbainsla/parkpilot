@@ -19,3 +19,7 @@ Deploy after linking: `vercel deploy --prod --yes`.
 GitHub source is published at https://github.com/Sachinbainsla/parkpilot. Automatic GitHub deployments additionally require connecting that GitHub account in Vercel Account Settings / Login Connections; CLI deployments work independently.
 
 This deployment is a fictional demo with simulated payments. See README.md for completed and deferred production features, and VERIFICATION.md for local test results.
+
+## Verified live URL
+
+https://parkpilot-eta.vercel.app — public production alias, verified on desktop and a phone-sized viewport. Deployment ID: `dpl_Cc9YLxxbHPCuZWRNxBFhptP4sCjx`.

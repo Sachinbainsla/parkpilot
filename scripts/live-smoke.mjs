@@ -17,6 +17,12 @@ rl.once("line",async line=>{
   await login("owner@metro.demo");await page.getByRole("heading",{name:"Your parking, at a glance"}).waitFor();
   const owner=await (await context.request.get(baseUrl+"/api/operations")).json();
   if(owner.spaces.length!==100||owner.user.role!=="OWNER")throw new Error("Hosted owner dataset is incorrect.");
+  const slot=owner.spaces.find(s=>s.number==="P025");
+  const entry=await context.request.post(baseUrl+"/api/operations",{headers:{Origin:baseUrl},data:{action:"checkin",spaceId:slot.id,plate:"MH02AB1025"}});
+  if(!entry.ok())throw new Error("Hosted check-in failed: HTTP "+entry.status());
+  const session=await entry.json();
+  const exit=await context.request.post(baseUrl+"/api/operations",{headers:{Origin:baseUrl},data:{action:"checkout",sessionId:session.id}});
+  if(!exit.ok())throw new Error("Hosted check-out failed: HTTP "+exit.status());
   await page.getByRole("button",{name:/^P001:/}).waitFor();await page.waitForTimeout(1800);
   await mkdir("screenshots",{recursive:true});await page.screenshot({path:"screenshots/cloud-desktop.png",fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.waitForTimeout(1800);
@@ -26,6 +32,13 @@ rl.once("line",async line=>{
   await context.clearCookies();await login("customer@metro.demo");await page.getByRole("heading",{name:"Customer Portal",exact:true}).waitFor();
   const own=await (await context.request.get(baseUrl+"/api/operations")).json();
   if(own.customers.length!==1||!own.vehicles.every(v=>v.customerId===own.user.customerId))throw new Error("Hosted customer isolation check failed.");
-  console.log(JSON.stringify({url:baseUrl,https:true,anonymousApi:"401",ownerLogin:"passed",spaces:owner.spaces.length,mobile:"passed",customerLogin:"passed",tenantIsolation:"passed"}));
+  const invoice=own.invoices.find(i=>i.amountPaise-i.payments.reduce((n,p)=>n+p.amountPaise,0)>=100);
+  if(!invoice)throw new Error("Hosted demo invoice is unavailable.");
+  const payment=await context.request.post(baseUrl+"/api/operations",{headers:{Origin:baseUrl},data:{action:"payment",invoiceId:invoice.id,amountPaise:100,method:"SIMULATED",reference:"CLOUD-SMOKE-"+Date.now(),idempotencyKey:crypto.randomUUID()}});
+  if(!payment.ok())throw new Error("Hosted simulated payment failed: HTTP "+payment.status());
+  const recorded=await payment.json();
+  const receipt=await context.request.get(baseUrl+"/api/receipt/"+recorded.id);
+  if(!receipt.ok()||!receipt.headers()["content-type"]?.includes("application/pdf"))throw new Error("Hosted PDF receipt check failed.");
+  console.log(JSON.stringify({url:baseUrl,https:true,checkin:"passed",checkout:"passed",simulatedPayment:"passed",pdfReceipt:"passed",anonymousApi:"401",ownerLogin:"passed",spaces:owner.spaces.length,mobile:"passed",customerLogin:"passed",tenantIsolation:"passed"}));
  }catch(e){console.error(e instanceof Error?e.message:"Hosted verification failed.");process.exitCode=1;}finally{await browser?.close();}
 });

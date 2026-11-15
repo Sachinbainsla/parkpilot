@@ -99,3 +99,7 @@ The local helper initializes UTF-8 for Hindi templates. Migration 003 configures
 ## Verification results
 
 See [VERIFICATION.md](VERIFICATION.md) for the completed test results, environment details and remaining dependency-audit findings. Desktop and mobile captures are in `screenshots/`.
+
+## Live hosted demo
+
+Open [ParkPilot on Vercel](https://parkpilot-eta.vercel.app) on desktop or mobile. The hosted demo has separate cloud credentials supplied by the account owner; the sample local password in this README is for local setup. All hosted records and payments are fictional. See [DEPLOYMENT.md](DEPLOYMENT.md) for hosting configuration.
