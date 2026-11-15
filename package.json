@@ -6,7 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3001",
-    "lint": "eslint",
+    "lint": "eslint src tests e2e scripts next.config.ts playwright.config.ts vitest.config.ts vitest.integration.config.ts eslint.config.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -15,7 +15,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:local": "tsx scripts/local-db.ts",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "vercel-build": "node scripts/vercel-build.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.6",

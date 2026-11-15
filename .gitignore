@@ -61,3 +61,6 @@ next-env.d.ts
 *.p12
 *.pfx
 *.log
+
+# Vercel local project metadata
+/.vercel/

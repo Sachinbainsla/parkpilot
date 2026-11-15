@@ -2,6 +2,7 @@ import "server-only";
 import { cookies, headers } from "next/headers";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { db } from "./db";
+import { appOrigin } from "./origin";
 import { redirect } from "next/navigation";
 export function hashPassword(password: string) { const salt = randomBytes(16).toString("hex"); return salt + ":" + scryptSync(password, salt, 64).toString("hex"); }
 export function verifyPassword(password: string, hash: string) { const [salt, key] = hash.split(":"); if (!salt || !key) return false; const actual = scryptSync(password, salt, 64); const expected = Buffer.from(key, "hex"); return actual.length === expected.length && timingSafeEqual(actual, expected); }
@@ -14,7 +15,7 @@ export async function currentUser() {
 }
 export async function requireUser() { const user = await currentUser(); if (!user) redirect("/login"); return user; }
 export async function requireApiUser() { const user = await currentUser(); if (!user) throw new Error("UNAUTHENTICATED"); return user; }
-export async function checkOrigin() { const h = await headers(); if (h.get("origin") !== new URL(process.env.APP_ORIGIN || "http://localhost:3000").origin) throw new Error("Invalid request origin"); }
+export async function checkOrigin() { const h = await headers(); if (h.get("origin") !== appOrigin()) throw new Error("Invalid request origin"); }
 export async function limit(key: string, maximum = 30) {
   const now = new Date();
   const rows = await db.$queryRaw<{ count: number }[]>`INSERT INTO "RateLimit" (key, count, "resetsAt") VALUES (${key}, 1, ${new Date(now.getTime() + 600000)}) ON CONFLICT (key) DO UPDATE SET count = CASE WHEN "RateLimit"."resetsAt" < ${now} THEN 1 ELSE "RateLimit".count + 1 END, "resetsAt" = CASE WHEN "RateLimit"."resetsAt" < ${now} THEN ${new Date(now.getTime() + 600000)} ELSE "RateLimit"."resetsAt" END RETURNING count`;

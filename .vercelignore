@@ -1,0 +1,15 @@
+.git
+.vercel
+.env
+.env.*
+.local-postgres*
+node_modules
+.next
+test-results
+playwright-report
+coverage
+screenshots
+backups
+*.dump
+*.backup
+*.log
