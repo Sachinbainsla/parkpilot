@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  MANAGER
+  GUARD
+  CUSTOMER
+}
+model Organization {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  branding String @default("#0c806b")
+  plan String @default("Professional")
+  features String[] @default(["parking", "billing", "reports"])
+  createdAt DateTime @default(now())
+}
+model ParkingLocation {
+  id String @id @default(cuid())
+  organizationId String
+  name String
+  timezone String @default("Asia/Kolkata")
+  address String
+  createdAt DateTime @default(now())
+  @@index([organizationId])
+}
+model ParkingZone {
+  id String @id @default(cuid())
+  organizationId String
+  locationId String
+  name String
+  floor String
+  @@index([organizationId, locationId])
+}
+model ParkingSpace {
+  id String @id @default(cuid())
+  organizationId String
+  locationId String
+  zoneId String
+  number String
+  blocked Boolean @default(false)
+  sessions ParkingSession[]
+  reservations Reservation[]
+  @@unique([organizationId, locationId, number])
+  @@unique([id, organizationId])
+}
+model User {
+  id String @id @default(cuid())
+  organizationId String
+  email String @unique
+  name String
+  passwordHash String
+  role Role
+  customerId String?
+  disabled Boolean @default(false)
+  sessions AuthSession[]
+  createdAt DateTime @default(now())
+  @@index([organizationId])
+}
+model AuthSession {
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+}
+model RateLimit {
+  key String @id
+  count Int @default(1)
+  resetsAt DateTime
+}
+model Customer {
+  id String @id @default(cuid())
+  organizationId String
+  name String
+  phone String
+  email String?
+  consent Boolean @default(false)
+  language String @default("en")
+  vehicles Vehicle[]
+  createdAt DateTime @default(now())
+  @@unique([id, organizationId])
+  @@index([organizationId, name])
+}
+model Vehicle {
+  id String @id @default(cuid())
+  organizationId String
+  customerId String
+  customer Customer @relation(fields: [customerId, organizationId], references: [id, organizationId])
+  plate String
+  type String @default("Car")
+  sessions ParkingSession[]
+  @@unique([organizationId, plate])
+  @@unique([id, organizationId])
+}
+model Reservation {
+  id String @id @default(cuid())
+  organizationId String
+  spaceId String
+  space ParkingSpace @relation(fields: [spaceId, organizationId], references: [id, organizationId])
+  customerId String
+  authorizedPlates String[]
+  startAt DateTime
+  endAt DateTime?
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  @@index([organizationId, spaceId, status])
+}
+model ParkingSession {
+  id String @id @default(cuid())
+  organizationId String
+  spaceId String
+  space ParkingSpace @relation(fields: [spaceId, organizationId], references: [id, organizationId])
+  vehicleId String
+  vehicle Vehicle @relation(fields: [vehicleId, organizationId], references: [id, organizationId])
+  entryAt DateTime @default(now())
+  exitAt DateTime?
+  unauthorized Boolean @default(false)
+  @@index([organizationId, entryAt])
+}
+model Subscription {
+  id String @id @default(cuid())
+  organizationId String
+  customerId String
+  startAt DateTime
+  paidThrough DateTime
+  nextRenewal DateTime
+  amountPaise Int
+  graceDays Int @default(5)
+  status String @default("ACTIVE")
+  cancellationReason String?
+  createdAt DateTime @default(now())
+  @@index([organizationId, paidThrough])
+}
+model Invoice {
+  id String @id @default(cuid())
+  organizationId String
+  customerId String
+  number String
+  amountPaise Int
+  dueAt DateTime
+  createdAt DateTime @default(now())
+  payments Payment[]
+  @@unique([organizationId, number])
+  @@unique([id, organizationId])
+}
+model Payment {
+  id String @id @default(cuid())
+  organizationId String
+  invoiceId String
+  invoice Invoice @relation(fields: [invoiceId, organizationId], references: [id, organizationId])
+  amountPaise Int
+  method String
+  reference String
+  idempotencyKey String
+  createdAt DateTime @default(now())
+  @@unique([organizationId, idempotencyKey])
+}
+model Violation {
+  id String @id @default(cuid())
+  organizationId String
+  spaceId String
+  plate String
+  reason String
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([organizationId, createdAt])
+}
+model Notification {
+  id String @id @default(cuid())
+  organizationId String
+  customerId String?
+  kind String
+  message String
+  messageHi String
+  channel String @default("IN_APP")
+  status String @default("MOCK_LOGGED")
+  attempts Int @default(1)
+  dedupKey String
+  createdAt DateTime @default(now())
+  @@unique([organizationId, dedupKey, channel])
+}
+model WaitlistEntry {
+  id String @id @default(cuid())
+  organizationId String
+  customerId String
+  vehicleId String
+  status String @default("WAITING")
+  createdAt DateTime @default(now())
+  @@index([organizationId, status, createdAt])
+}
+model AuditLog {
+  id String @id @default(cuid())
+  organizationId String
+  actorId String
+  action String
+  entityId String
+  details Json
+  createdAt DateTime @default(now())
+  @@index([organizationId, createdAt])
+}
